@@ -6,7 +6,6 @@ Created on Wed Apr 26 18:20:10 2023
 @author: balthasar
 """
 import numpy as np
-import pandas as pd
 import matplotlib.pyplot as plt
 from .dataloader import load_gff_tree, Exon, Transcript, Gene, GeneTree
 from .matplotlib_extension import (
@@ -20,18 +19,11 @@ import matplotlib.patheffects as pe
 from matplotlib.patches import BoxStyle
 
 from pathlib import Path
-import intervaltree
-
 import lzma
 import pickle
 
 from . import annotation
-
-try:
-    import importlib.resources as pkg_resources
-except ImportError:
-    # Try backported to PY<37 `importlib_resources`.
-    import importlib_resources as pkg_resources
+import importlib.resources as pkg_resources
 
 
 _ANNOTATION_CACHE_ = {}
@@ -43,74 +35,74 @@ _ANNOTATION_BUILTIN_CACHE_ = {}
 ###############################################################################
 
 
-def bed(bed, chrom, ax=None, textcol=None, valuecol=None, ptype="plot"):
-    """
+# def bed(bed, chrom, ax=None, textcol=None, valuecol=None, ptype="plot"):
+#     """
 
-    Not used right now
+#     Not used right now
 
-    Parameters
-    ----------
-    bed : TYPE
-        DESCRIPTION.
-    chrom : TYPE
-        DESCRIPTION.
-    ax : TYPE, optional
-        DESCRIPTION. The default is None.
-    textcol : TYPE, optional
-        DESCRIPTION. The default is None.
-    valuecol : TYPE, optional
-        DESCRIPTION. The default is None.
-    ptype : TYPE, optional
-        DESCRIPTION. The default is "plot".
+#     Parameters
+#     ----------
+#     bed : TYPE
+#         DESCRIPTION.
+#     chrom : TYPE
+#         DESCRIPTION.
+#     ax : TYPE, optional
+#         DESCRIPTION. The default is None.
+#     textcol : TYPE, optional
+#         DESCRIPTION. The default is None.
+#     valuecol : TYPE, optional
+#         DESCRIPTION. The default is None.
+#     ptype : TYPE, optional
+#         DESCRIPTION. The default is "plot".
 
-    Raises
-    ------
-    ValueError
-        DESCRIPTION.
+#     Raises
+#     ------
+#     ValueError
+#         DESCRIPTION.
 
-    Returns
-    -------
-    ax : TYPE
-        DESCRIPTION.
+#     Returns
+#     -------
+#     ax : TYPE
+#         DESCRIPTION.
 
-    """
-    if ax == None:
-        ax = plt.gca()
+#     """
+#     if ax == None:
+#         ax = plt.gca()
 
-    if type(bed) == str:
-        bed = pd.read_csv(bed, sep="\t", header=None, index_col=None)
+#     if type(bed) == str:
+#         bed = pd.read_csv(bed, sep="\t", header=None, index_col=None)
 
-    if len(ax.get_shared_x_axes().get_siblings(ax)) > 1:
-        ax.xaxis.set_tick_params(which="both", length=0, labelbottom=False)
+#     if len(ax.get_shared_x_axes().get_siblings(ax)) > 1:
+#         ax.xaxis.set_tick_params(which="both", length=0, labelbottom=False)
 
-    bed = bed.loc[bed[0] == chrom]
-    # needed for text and scatter
-    bed["midp"] = bed.iloc[:, 1] + (bed.iloc[:, 2] - bed.iloc[:, 1]) / 2
+#     bed = bed.loc[bed[0] == chrom]
+#     # needed for text and scatter
+#     bed["midp"] = bed.iloc[:, 1] + (bed.iloc[:, 2] - bed.iloc[:, 1]) / 2
 
-    if valuecol == None:
-        ycol = [0] * len(bed)
-        ax.yaxis.set_tick_params(which="both", length=0, labelbottom=False)
-    else:
-        ycol = bed.iloc[:, valuecol]
+#     if valuecol == None:
+#         ycol = [0] * len(bed)
+#         ax.yaxis.set_tick_params(which="both", length=0, labelbottom=False)
+#     else:
+#         ycol = bed.iloc[:, valuecol]
 
-    if textcol:
-        if not ax.get_autoscale_on():
-            start, end = ax.get_xlim()
-            print(start, end)
-        inlimits = (bed["midp"] > start) & (bed["midp"] < end)
-        textcol = bed.iloc[:, textcol]
-        for m, t in zip(bed["midp"].loc[inlimits], textcol.loc[inlimits]):
-            ax.text(m, 0, t, ha="center", va="bottom")
+#     if textcol:
+#         if not ax.get_autoscale_on():
+#             start, end = ax.get_xlim()
+#             print(start, end)
+#         inlimits = (bed["midp"] > start) & (bed["midp"] < end)
+#         textcol = bed.iloc[:, textcol]
+#         for m, t in zip(bed["midp"].loc[inlimits], textcol.loc[inlimits]):
+#             ax.text(m, 0, t, ha="center", va="bottom")
 
-    if ptype == "plot":
-        for start, end, y in zip(bed.iloc[:, 1], bed.iloc[:, 2], ycol):
-            ax.plot([start, end], [0, 0])
-    elif ptype == "scatter":
-        ax.scatter(bed["midp"], ycol)
-    else:
-        raise ValueError(f"{ptype} is not an appropriate plot type")
+#     if ptype == "plot":
+#         for start, end, y in zip(bed.iloc[:, 1], bed.iloc[:, 2], ycol):
+#             ax.plot([start, end], [0, 0])
+#     elif ptype == "scatter":
+#         ax.scatter(bed["midp"], ycol)
+#     else:
+#         raise ValueError(f"{ptype} is not an appropriate plot type")
 
-    return ax
+#     return ax
 
 
 ###############################################################################
@@ -235,7 +227,7 @@ def genetrack(
 
                 _ANNOTATION_BUILTIN_CACHE_[chrom] = geneinfo
 
-        elif isinstance(geneinfo, intervaltree.IntervalTree):
+        elif isinstance(geneinfo, GeneTree):
             print("tree given")
         elif isinstance(geneinfo, str) or isinstance(geneinfo, Path):
             geneinfo = load_gff_tree(geneinfo, chrom)
