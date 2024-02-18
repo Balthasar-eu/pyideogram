@@ -15,7 +15,7 @@ pip install pyideogram
 or install it manually:
 
 ```bash
-git clone balthasar-eu/pyideogram
+git clone https://github.com/balthasar-eu/pyideogram.git
 cd pyideogram
 pip install .
 ```
