@@ -189,7 +189,7 @@ def load_gff_tree(file, chromosome=None):
     ----------
     file : str or path
         The path to the gff
-    chromosome : TYPE
+    chromosome : str or None
         The chromosome to load, or leave empty for everything
 
     Returns
@@ -241,51 +241,58 @@ def load_gff_tree(file, chromosome=None):
                     exons.setdefault(cand["chrom"], []).append(cand)
     gdicts = {}
     for chrom in genes:
-        if chromosome != "all" and chromosome != chrom:
+        tdict = {}
+        if chromosome is not None and chromosome != chrom:
             continue
         gdict = {}
         for g in genes[chrom]:
-            if g["gene_name"] in gdict:
-                print("Duplicate gene name", g["gene_name"])
+
+            if g["ID"] in gdict:
+                print("Duplicate gene ID", g["ID"])
             else:
-                gdict[g["gene_name"]] = (
-                    g["start"],
-                    g["end"],
-                    g["strand"],
-                    {},
-                )
+                try:
+                    gdict[g["ID"]] = (
+                        g["Name"],
+                        g["start"],
+                        g["end"],
+                        g["strand"],
+                        {},
+                    )
+                except KeyError:
+                    continue
 
         for t in transcripts[chrom]:
-            parent = t["gene_name"]
-            if parent not in gdict:
-                print("Transcripts parent not present", parent)
-            else:
-                gdict[parent][3][t["transcript_name"]] = []
+            try:
+                parent = t["Parent"]
+                tdict[t["ID"]] = t["Parent"]
+                gdict[parent][4][t["ID"]] = {"name": t["Name"], "exons": []}
+            except KeyError:
+                continue
 
         for e in exons[chrom]:
-            gparent = e["gene_name"]
-            tparent = e["transcript_name"]
-            if gparent not in gdict:
-                print("Exons parent not present", parent)
-            else:
-                gdict[gparent][3][tparent].append(
+            try:
+                gparent = tdict[e["Parent"]]
+                tparent = e["Parent"]
+                gdict[gparent][4][tparent]["exons"].append(
                     (
                         e["start"],
                         e["end"],
                     )
                 )
+            except KeyError:
+                continue
         gdicts[chrom] = gdict
 
     for chrom, gdict in gdicts.items():
         genes = []
 
         for g, v in gdict.items():
-            if v[2] == "-":
-                new = Gene(g, v[0], v[1], [(t, [Exon(tte, tts) for tte, tts in zip(te, ts)])
-                                           for t, (ts, te) in v[3].items()])
+            if v[3] == "-":
+                new = Gene(v[0], v[1], v[2], [Transcript(tattr["name"], [Exon(tte, tts) for tte, tts in tattr["exons"]])
+                                              for t, tattr in v[4].items()])
             else:
-                new = Gene(g, v[0], v[1], [(t, [Exon(tts, tte) for tts, tte in zip(ts, te)])
-                                           for t, (ts, te) in v[3].items()])
+                new = Gene(v[0], v[1], v[2], [Transcript(tattr["name"], [Exon(tts, tte) for tts, tte in tattr["exons"]])
+                                              for t, tattr in v[4].items()])
 
             genes.append(new)
 
