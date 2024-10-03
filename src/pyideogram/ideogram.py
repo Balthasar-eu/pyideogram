@@ -49,7 +49,7 @@ def ideogramh(
     chrom: str,
     bands=None,
     ax: plt.Axes = None,
-    round_pct: float = 0.025,
+    round_pct: float = 0.55,
     color: dict = BANDCOL,
     style="round",
     names=False,
@@ -74,8 +74,8 @@ def ideogramh(
     ax : plt.Axes
         Axes to plot on. If not given it is automatically determined.
     round_pct : float
-        How strong the rounding for chromosome ends and the centromer should be
-        in the plot. The default should look good.
+        The rounding strength in pct of the rounding of the short side, which is 90%.
+        This is scaled by the ratio and should look good at ~ 0.5
     color : dict
         A dictionary that maps the last column of a cytoband file to a color to
         display. Normally the last color contains some staining info, but you
@@ -147,9 +147,6 @@ def ideogramh(
             ** ideokwargs
         )
 
-        # TODO: improve box rounding in all aspect ratios
-        size_reference = abs(sub(*ax.get_ylim())) * round_pct
-
         cornerref = ([0, 1], [2, 3])
 
     else:
@@ -166,9 +163,6 @@ def ideogramh(
                 1, 1, 1) for bt in band_type],
             ** ideokwargs
         )
-
-        # TODO: improve box rounding in all aspect ratios
-        size_reference = abs(sub(*ax.get_xlim())) * round_pct
 
         cornerref = ([0, 3], [1, 2])
 
@@ -230,13 +224,13 @@ def ideogramh(
 
         if orientation == "vertical":
             Box = SideRound(
-                yround=min([size_reference / bb.height, 2]),
+                yround=min([((round_pct*0.9)*ratio) / bb.height, 2]),
                 xround=0.9,
                 corners=cornerref[i % 2],
             )
         else:
             Box = SideRound(
-                xround=min([size_reference / bb.width, 2]),
+                xround=min([((round_pct*0.9)/ratio) / bb.width, 2]),
                 yround=0.9,
                 corners=cornerref[i % 2],
             )
@@ -246,7 +240,6 @@ def ideogramh(
             abs(bb.width),
             abs(bb.height),
             boxstyle=Box,
-            mutation_aspect=ratio,
             ec=patch.get_edgecolor(),
             fc=patch.get_facecolor(),
             linewidth=patch.get_linewidth(),
@@ -286,7 +279,7 @@ def ideogramv(
     chrom: str,
     bands=None,
     ax: plt.Axes = None,
-    round_pct: float = 0.025,
+    round_pct: float = 0.55,
     color: dict = BANDCOL,
     names=False,
     textkwargs={},
