@@ -401,8 +401,28 @@ def zoom(
     /,
     limits=None,
     zoomtype="curve",
+    bend = 0.1,
 ):
+    """
+    Plot the ideogram of a chromosome
+
+    Parameters
+    ----------
+    ax1 : plt.Axes
+        Mandatory. The first axis to connect from.
+    ax2 : plt.Axes
+        Mandatory. The second axis to connect to.
+    limits : plt.Axes
+        x limits for zoom
+    zoomtype : plt.Axes
+        allowed are: "curve", "filledcurve". Anything else will make just a line
+    bend : plt.Axes
+        bend of the bezier curve. If line this is ingnored.
+    """
+
+    # TODO: allow connection from Y
     # TODO: add rectangle and connection properties
+    # TODO: split fill from type!
     if (fig := ax1.get_figure()) != ax2.get_figure():
         raise ValueError("Axes need to be from the same figure!")
 
@@ -450,11 +470,11 @@ def zoom(
 
     # abs for inverted axes
     # get the absolute eight of the subplot. The whole y axis would be ~that in
-    # percentage of the whole figure. Divide by 0.1 to get the ratio of that
+    # percentage of the whole figure. Divide by <bend> to get the ratio of that
     # from 10% and divide the y-axis height to get the yaxis that is 10% of the
     # whole figure
-    ax1p = abs(y1hi - y1lo) / ((ax1.bbox.height / fig.bbox.height) / 0.1)
-    ax2p = abs(y2hi - y2lo) / ((ax2.bbox.height / fig.bbox.height) / 0.1)
+    ax1p = abs(y1hi - y1lo) / ((ax1.bbox.height / fig.bbox.height) / bend)
+    ax2p = abs(y2hi - y2lo) / ((ax2.bbox.height / fig.bbox.height) / bend)
 
     FILL = False
     if zoomtype == "curve" or zoomtype == "filledcurve":
