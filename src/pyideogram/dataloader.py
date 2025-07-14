@@ -177,6 +177,7 @@ def load_cytobands(file):
                 blists[0].append(int(end))
                 blists[1].append(name)
                 blists[2].append(btype)
+    return banddict
 
 
 def load_gff_tree(
