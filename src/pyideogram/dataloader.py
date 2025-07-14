@@ -19,7 +19,7 @@ import bisect
 
 
 class Exon:
-    __slots__ = 'start', 'end'
+    __slots__ = "start", "end"
 
     def __repr__(self):
         return f"{self.__class__.__name__}({self.start}, {self.end})"
@@ -38,8 +38,7 @@ class Exon:
 
 
 class Transcript:
-
-    __slots__ = 'name', 'exons', '__dict__'
+    __slots__ = "name", "exons", "__dict__"
 
     def __repr__(self):
         return f"{self.__class__.__name__}('{self.name}', {self.exons})"
@@ -70,7 +69,8 @@ class Transcript:
                     return self.__dict__[key]
                 else:
                     raise ValueError(
-                        f"The transcript has no attribute '{key}'!")
+                        f"The transcript has no attribute '{key}'!"
+                    )
 
     def __setitem__(self, key, value):
         match key:
@@ -87,7 +87,7 @@ class Gene:
     This is a class for gene info. Has slots for name, start and end and transcripts.
     """
 
-    __slots__ = 'name', 'start', 'end', 'transcripts', '__dict__'
+    __slots__ = "name", "start", "end", "transcripts", "__dict__"
 
     def __repr__(self):
         return f"{self.__class__.__name__}('{self.name}', {self.start}, {self.end}, {self.transcripts})"
@@ -128,7 +128,7 @@ class GeneTree:
     """
     Not a tree, but it sorts a gene list and performs binary search. This works
     well in the specific usecase of genes, because genes are generally much
-    smaller than the search space. I found this can perform two orders of magnitude
+    smaller than the search space and non overlapping. I found this can perform two orders of magnitude
     better than intervaltree for specific queries.
     """
 
@@ -152,7 +152,7 @@ class GeneTree:
             stop = self.genes[-1].end + 1
 
         mins = max(start - self.largest, 0)
-        i = bisect.bisect_left(self.genes, Gene("dummy", mins, mins+1, []))
+        i = bisect.bisect_left(self.genes, Gene("dummy", mins, mins + 1, []))
 
         glist = []
         for g in self.genes[i:]:
@@ -179,7 +179,12 @@ def load_cytobands(file):
                 blists[2].append(btype)
 
 
-def load_gff_tree(file, chromosome=None):
+def load_gff_tree(
+    file,
+    chromosome=None,
+    name_field="gene_name",
+    tname_field="transcript_name",
+):
     """
 
     This loads a gff into a tree like structure to parse genes quickly by pos.
@@ -240,33 +245,38 @@ def load_gff_tree(file, chromosome=None):
                 case "exon":
                     exons.setdefault(cand["chrom"], []).append(cand)
     gdicts = {}
+    errorcount = 0
     for chrom in genes:
         tdict = {}
         if chromosome is not None and chromosome != chrom:
             continue
         gdict = {}
         for g in genes[chrom]:
-
             if g["ID"] in gdict:
                 print("Duplicate gene ID", g["ID"])
             else:
                 try:
                     gdict[g["ID"]] = (
-                        g["Name"],
+                        g[name_field],
                         g["start"],
                         g["end"],
                         g["strand"],
                         {},
                     )
                 except KeyError:
+                    errorcount += 1
                     continue
 
         for t in transcripts[chrom]:
             try:
                 parent = t["Parent"]
                 tdict[t["ID"]] = t["Parent"]
-                gdict[parent][4][t["ID"]] = {"name": t["Name"], "exons": []}
+                gdict[parent][4][t["ID"]] = {
+                    "name": t[tname_field],
+                    "exons": [],
+                }
             except KeyError:
+                errorcount += 1
                 continue
 
         for e in exons[chrom]:
@@ -283,16 +293,43 @@ def load_gff_tree(file, chromosome=None):
                 continue
         gdicts[chrom] = gdict
 
+    if errorcount:
+        warnings.warn(
+            f"""Encountered {errorcount} key errors. Make sure the name field
+            in the gff is {name_field}. If it is not you can change it by
+            giving the correct name as function argument."""
+        )
+
     for chrom, gdict in gdicts.items():
         genes = []
 
         for g, v in gdict.items():
             if v[3] == "-":
-                new = Gene(v[0], v[1], v[2], [Transcript(tattr["name"], [Exon(tte, tts) for tte, tts in tattr["exons"]])
-                                              for t, tattr in v[4].items()])
+                new = Gene(
+                    v[0],
+                    v[1],
+                    v[2],
+                    [
+                        Transcript(
+                            tattr["name"],
+                            [Exon(tte, tts) for tte, tts in tattr["exons"]],
+                        )
+                        for t, tattr in v[4].items()
+                    ],
+                )
             else:
-                new = Gene(v[0], v[1], v[2], [Transcript(tattr["name"], [Exon(tts, tte) for tts, tte in tattr["exons"]])
-                                              for t, tattr in v[4].items()])
+                new = Gene(
+                    v[0],
+                    v[1],
+                    v[2],
+                    [
+                        Transcript(
+                            tattr["name"],
+                            [Exon(tts, tte) for tts, tte in tattr["exons"]],
+                        )
+                        for t, tattr in v[4].items()
+                    ],
+                )
 
             genes.append(new)
 
@@ -314,7 +351,7 @@ else:
         """
 
         THIS IS CURRENTLY NOT USED, BUT SHOULD WORK.
-        This approach is somewhat manual, but faster than splitting and 
+        This approach is somewhat manual, but faster than splitting and
         converting columns after loading the file.
 
         Parameters
