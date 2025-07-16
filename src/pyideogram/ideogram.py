@@ -49,7 +49,7 @@ def ideogramh(
     chrom: str,
     bands=None,
     ax: plt.Axes = None,
-    round_pct: float = 0.025,
+    round_pct: float = 0.55,
     color: dict = BANDCOL,
     style="round",
     names=False,
@@ -74,8 +74,8 @@ def ideogramh(
     ax : plt.Axes
         Axes to plot on. If not given it is automatically determined.
     round_pct : float
-        How strong the rounding for chromosome ends and the centromer should be
-        in the plot. The default should look good.
+        The rounding strength in pct of the rounding of the short side, which is 90%.
+        This is scaled by the ratio and should look good at ~ 0.5
     color : dict
         A dictionary that maps the last column of a cytoband file to a color to
         display. Normally the last color contains some staining info, but you
@@ -147,9 +147,6 @@ def ideogramh(
             ** ideokwargs
         )
 
-        # TODO: improve box rounding in all aspect ratios
-        size_reference = abs(sub(*ax.get_ylim())) * round_pct
-
         cornerref = ([0, 1], [2, 3])
 
     else:
@@ -166,9 +163,6 @@ def ideogramh(
                 1, 1, 1) for bt in band_type],
             ** ideokwargs
         )
-
-        # TODO: improve box rounding in all aspect ratios
-        size_reference = abs(sub(*ax.get_xlim())) * round_pct
 
         cornerref = ([0, 3], [1, 2])
 
@@ -230,13 +224,13 @@ def ideogramh(
 
         if orientation == "vertical":
             Box = SideRound(
-                yround=min([size_reference / bb.height, 2]),
+                yround=min([((round_pct*0.9)*ratio) / bb.height, 2]),
                 xround=0.9,
                 corners=cornerref[i % 2],
             )
         else:
             Box = SideRound(
-                xround=min([size_reference / bb.width, 2]),
+                xround=min([((round_pct*0.9)/ratio) / bb.width, 2]),
                 yround=0.9,
                 corners=cornerref[i % 2],
             )
@@ -246,7 +240,6 @@ def ideogramh(
             abs(bb.width),
             abs(bb.height),
             boxstyle=Box,
-            mutation_aspect=ratio,
             ec=patch.get_edgecolor(),
             fc=patch.get_facecolor(),
             linewidth=patch.get_linewidth(),
@@ -286,7 +279,7 @@ def ideogramv(
     chrom: str,
     bands=None,
     ax: plt.Axes = None,
-    round_pct: float = 0.025,
+    round_pct: float = 0.55,
     color: dict = BANDCOL,
     names=False,
     textkwargs={},
@@ -408,8 +401,28 @@ def zoom(
     /,
     limits=None,
     zoomtype="curve",
+    bend = 0.1,
 ):
+    """
+    Plot the ideogram of a chromosome
+
+    Parameters
+    ----------
+    ax1 : plt.Axes
+        Mandatory. The first axis to connect from.
+    ax2 : plt.Axes
+        Mandatory. The second axis to connect to.
+    limits : plt.Axes
+        x limits for zoom
+    zoomtype : plt.Axes
+        allowed are: "curve", "filledcurve". Anything else will make just a line
+    bend : plt.Axes
+        bend of the bezier curve. If line this is ingnored.
+    """
+
+    # TODO: allow connection from Y
     # TODO: add rectangle and connection properties
+    # TODO: split fill from type!
     if (fig := ax1.get_figure()) != ax2.get_figure():
         raise ValueError("Axes need to be from the same figure!")
 
@@ -457,11 +470,11 @@ def zoom(
 
     # abs for inverted axes
     # get the absolute eight of the subplot. The whole y axis would be ~that in
-    # percentage of the whole figure. Divide by 0.1 to get the ratio of that
+    # percentage of the whole figure. Divide by <bend> to get the ratio of that
     # from 10% and divide the y-axis height to get the yaxis that is 10% of the
     # whole figure
-    ax1p = abs(y1hi - y1lo) / ((ax1.bbox.height / fig.bbox.height) / 0.1)
-    ax2p = abs(y2hi - y2lo) / ((ax2.bbox.height / fig.bbox.height) / 0.1)
+    ax1p = abs(y1hi - y1lo) / ((ax1.bbox.height / fig.bbox.height) / bend)
+    ax2p = abs(y2hi - y2lo) / ((ax2.bbox.height / fig.bbox.height) / bend)
 
     FILL = False
     if zoomtype == "curve" or zoomtype == "filledcurve":

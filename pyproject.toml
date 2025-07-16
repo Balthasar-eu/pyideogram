@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pyideogram"
-version = "0.0.2"
+version = "0.1.0"
 dependencies = [
   "matplotlib",
   "numpy",
@@ -27,3 +27,8 @@ classifiers = [
 [project.urls]
 "Homepage" = "https://github.com/Balthasar-eu/pyideogram"
 "Bug Tracker" = "https://github.com/Balthasar-eu/pyideogram/issues"
+
+[project.optional-dependencies]
+test = [
+    "pytest"
+]
