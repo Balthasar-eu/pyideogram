@@ -130,9 +130,10 @@ class GeneTree:
     well in the specific usecase of genes, because genes are generally much
     smaller than the search space and non overlapping. I found this can perform two orders of magnitude
     better than intervaltree for specific queries.
+    Does not support insertion, for changes the tree needs to be reconstructed.
     """
 
-    __slots__ = "genes", "largest"
+    __slots__ = "genes", "largest", "gdict"
 
     def __init__(self, genes):
         if not isinstance(genes, list):
@@ -140,28 +141,35 @@ class GeneTree:
 
         self.genes = sorted(genes)
         self.largest = max([g.end - g.start for g in genes])
+        self.gdict = {g.name:i for i,g in enumerate(self.genes)}
 
     def __getitem__(self, index):
-        start, stop = index.start, index.stop
 
-        if start is None:
-            start = 0
+        if isinstance(index,str):
+            return self.genes[self.gdict[index]]
+
+        else:
+
+            start, stop = index.start, index.stop
+
+            if start is None:
+                start = 0
+                if stop is None:
+                    return []
             if stop is None:
-                return []
-        if stop is None:
-            stop = self.genes[-1].end + 1
+                stop = self.genes[-1].end + 1
 
-        mins = max(start - self.largest, 0)
-        i = bisect.bisect_left(self.genes, Gene("dummy", mins, mins + 1, []))
+            mins = max(start - self.largest, 0)
+            i = bisect.bisect_left(self.genes, Gene("dummy", mins, mins + 1, []))
 
-        glist = []
-        for g in self.genes[i:]:
-            if g.start > stop:
-                break
-            if g.end > start:
-                glist.append(g)
+            glist = []
+            for g in self.genes[i:]:
+                if g.start > stop:
+                    break
+                if g.end > start:
+                    glist.append(g)
 
-        return glist
+            return glist
 
 
 def load_cytobands(file):
