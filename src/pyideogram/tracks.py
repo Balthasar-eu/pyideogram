@@ -228,7 +228,8 @@ def genetrack(
                 _ANNOTATION_BUILTIN_CACHE_[chrom] = geneinfo
 
         elif isinstance(geneinfo, GeneTree):
-            print("tree given")
+            pass
+            #print("tree given")
         elif isinstance(geneinfo, str) or isinstance(geneinfo, Path):
             geneinfo = load_gff_tree(geneinfo, chrom)
         else:

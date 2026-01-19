@@ -316,12 +316,12 @@ def load_gff_tree(
             if v[3] == "-":
                 new = Gene(
                     v[0],
-                    v[1],
                     v[2],
+                    v[1],
                     [
                         Transcript(
                             tattr["name"],
-                            [Exon(tte, tts) for tte, tts in tattr["exons"]],
+                            [Exon(tts, tte) for tte, tts in tattr["exons"]][::-1],
                         )
                         for t, tattr in v[4].items()
                     ],
